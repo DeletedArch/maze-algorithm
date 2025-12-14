@@ -96,6 +96,22 @@ public class Maze
         return list;
     }
 
+    public static List<(int x, int y)> GetUnvisitedNeighbors(int x, int y, Maze maze, bool[,] visited)
+    {
+        var list = new List<(int x, int y)>();
+
+        if (y > 0 && !visited[x,y-1] && maze.cells[x, y].up == true && maze.cells[x, y - 1].down == true)
+            list.Add((x, y - 1));
+        if (y < maze.height - 1 && !visited[x,y+1] && maze.cells[x, y].down == true && maze.cells[x, y + 1].up == true)
+            list.Add((x, y + 1));
+        if (x > 0 && !visited[x-1,y] && maze.cells[x, y].left == true && maze.cells[x - 1, y].right == true)
+            list.Add((x - 1, y));
+        if (x < maze.width - 1 && !visited[x+1,y] && maze.cells[x, y].right == true && maze.cells[x + 1, y].left == true)
+            list.Add((x + 1, y));
+
+        return list;
+    }
+
     private void CarvePassage(int x1, int y1, int x2, int y2)
     {
         if (x2 == x1 && y2 == y1 - 1)

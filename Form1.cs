@@ -1,32 +1,37 @@
-using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
-namespace maze_algorithm;
+namespace maze_algorithm
+{
     public partial class MainForm : Form
     {
         private Maze maze;
         private const int CellSize = 20;     // pixels per cell
         private const int WallThickness = 2; // line thickness
 
+        // store the path as a list of (x, y)
+        private List<(int x, int y)> solutionPath;
+
         public MainForm()
         {
             Text = "Maze Preview";
             DoubleBuffered = true; // reduce flicker
 
-            // Create maze
             int w = 40;
             int h = 40;
             maze = new Maze(w, h);
 
-            // Set form size based on maze dimensions
+            // compute solution path from (0,0) to (w-1,h-1)
+            solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze);
+
             int padding = 40;
             ClientSize = new Size(
                 w * CellSize + padding,
                 h * CellSize + padding
             );
 
-            // Add a button to regenerate maze
+            // Regenerate button
             var btn = new Button
             {
                 Text = "Regenerate",
@@ -36,6 +41,7 @@ namespace maze_algorithm;
             btn.Click += (s, e) =>
             {
                 maze = new Maze(w, h);
+                solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze);
                 Invalidate(); // redraw
             };
             Controls.Add(btn);
@@ -45,27 +51,28 @@ namespace maze_algorithm;
         {
             base.OnPaint(e);
 
-            // We reserve some top-left space for the button.
             int offsetX = 20;
             int offsetY = 50;
 
             using (var wallPen = new Pen(Color.Black, WallThickness))
-            using (var pathPen = new Pen(Color.LightGray, 1))
+            using (var gridPen = new Pen(Color.LightGray, 1))
             using (var startBrush = new SolidBrush(Color.LightGreen))
             using (var endBrush = new SolidBrush(Color.LightCoral))
+            using (var solutionPen = new Pen(Color.Blue, 3))
+            using (var solutionBrush = new SolidBrush(Color.FromArgb(80, Color.Blue)))
             {
-                // optional, draw background grid
+                // background grid
                 for (int x = 0; x < maze.Width; x++)
                 {
                     for (int y = 0; y < maze.Height; y++)
                     {
                         int sx = offsetX + x * CellSize;
                         int sy = offsetY + y * CellSize;
-                        e.Graphics.DrawRectangle(pathPen, sx, sy, CellSize, CellSize);
+                        e.Graphics.DrawRectangle(gridPen, sx, sy, CellSize, CellSize);
                     }
                 }
 
-                // highlight start and end cells
+                // start & end cells
                 int startX = 0;
                 int startY = 0;
                 int endX = maze.Width - 1;
@@ -87,7 +94,7 @@ namespace maze_algorithm;
                     CellSize - 4
                 );
 
-                // draw walls based on up/down/left/right flags
+                // draw walls
                 for (int x = 0; x < maze.Width; x++)
                 {
                     for (int y = 0; y < maze.Height; y++)
@@ -99,7 +106,6 @@ namespace maze_algorithm;
                         int ex = sx + CellSize;
                         int ey = sy + CellSize;
 
-                        // If a direction is false, there is a wall
                         if (!c.up)
                             e.Graphics.DrawLine(wallPen, sx, sy, ex, sy);
 
@@ -113,6 +119,40 @@ namespace maze_algorithm;
                             e.Graphics.DrawLine(wallPen, ex, sy, ex, ey);
                     }
                 }
+
+                // PATH VISUALIZATION
+                if (solutionPath != null && solutionPath.Count > 0)
+                {
+                    // fill each cell on the path
+                    foreach (var pos in solutionPath)
+                    {
+                        int px = offsetX + pos.x * CellSize;
+                        int py = offsetY + pos.y * CellSize;
+
+                        e.Graphics.FillRectangle(
+                            solutionBrush,
+                            px + 2,
+                            py + 2,
+                            CellSize - 4,
+                            CellSize - 4
+                        );
+                    }
+
+                    // draw blue line through centers
+                    for (int i = 0; i < solutionPath.Count - 1; i++)
+                    {
+                        var a = solutionPath[i];
+                        var b = solutionPath[i + 1];
+
+                        int ax = offsetX + a.x * CellSize + CellSize / 2;
+                        int ay = offsetY + a.y * CellSize + CellSize / 2;
+                        int bx = offsetX + b.x * CellSize + CellSize / 2;
+                        int by = offsetY + b.y * CellSize + CellSize / 2;
+
+                        e.Graphics.DrawLine(solutionPen, ax, ay, bx, by);
+                    }
+                }
             }
         }
     }
+}
