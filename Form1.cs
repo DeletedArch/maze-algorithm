@@ -31,8 +31,8 @@ namespace maze_algorithm
             Text = "Maze Preview";
             DoubleBuffered = true;
 
-            int w = 45;
-            int h = 45;
+            int w = 50;
+            int h = 50;
             maze = new Maze(w, h);
 
             int padding = 40;
