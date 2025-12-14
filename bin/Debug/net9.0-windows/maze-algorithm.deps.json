@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "maze-algorithm/1.0.0": {
+        "runtime": {
+          "maze-algorithm.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "maze-algorithm/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
