@@ -1,52 +1,233 @@
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace maze_algorithm
 {
+    public class GlobalSettings
+    {
+        public static bool UseAnimation = true;
+    }
+
     public partial class MainForm : Form
     {
         private Maze maze;
-        private const int CellSize = 20;     // pixels per cell
-        private const int WallThickness = 2; // line thickness
+        private const int CellSize = 20;
+        private const int WallThickness = 2;
 
-        // store the path as a list of (x, y)
         private List<(int x, int y)> solutionPath;
         private bool[,] visited;
+        private Thread solverThread;
+        private bool solverCancelRequested = false;
+
+        // ===== TIMER DISPLAY: label to show elapsed time =====
+        private Label timeLabel;
+        // ======================================================
 
         public MainForm()
         {
             Text = "Maze Preview";
-            DoubleBuffered = true; // reduce flicker
+            DoubleBuffered = true;
 
-            int w = 40;
-            int h = 40;
+            int w = 45;
+            int h = 45;
             maze = new Maze(w, h);
-
-            // compute solution path from (0,0) to (w-1,h-1)
-            solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze, out visited);
 
             int padding = 40;
             ClientSize = new Size(
                 w * CellSize + padding,
-                h * CellSize + padding
+                h * CellSize + padding + 30
             );
 
-            // Regenerate button
+            // ===== TIMER DISPLAY: create the label =====
+            timeLabel = new Label
+            {
+                Text = "Time: --",
+                AutoSize = true,
+                Location = new Point(700, 10),
+                Font = new Font("Arial", 12, FontStyle.Bold)
+            };
+            Controls.Add(timeLabel);
+            // ============================================
+
+            // start initial solve
+            solverThread = new Thread(() =>
+            {
+                long timeMs;
+                OptimizedAlgorithm.Solve(
+                    (0, 0),
+                    (w - 1, h - 1),
+                    maze,
+                    ref visited,
+                    ref solutionPath,
+                    () =>
+                    {
+                        if (InvokeRequired)
+                            BeginInvoke(new Action(Invalidate));
+                        else
+                            Invalidate();
+                    },
+                    () => solverCancelRequested,
+                    out timeMs);
+
+                // ===== TIMER DISPLAY: update label on UI thread =====
+                UpdateTimeLabel(timeMs);
+                // =====================================================
+            })
+            { IsBackground = true };
+            solverThread.Start();
+
+            // Regenerate Optimized button
             var btn = new Button
             {
-                Text = "Regenerate",
+                Text = "Regenerate Optimized",
                 AutoSize = true,
                 Location = new Point(10, 10)
             };
+
+            // Regenerate Naive button
+            var btn2 = new Button
+            {
+                Text = "Regenerate Naive",
+                AutoSize = true,
+                Location = new Point(200, 10)
+            };
+
             btn.Click += (s, e) =>
             {
+                solverCancelRequested = true;
+                if (solverThread != null && solverThread.IsAlive)
+                {
+                    try { solverThread.Join(50); }
+                    catch { }
+                }
+
                 maze = new Maze(w, h);
-                solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze, out visited);
-                Invalidate(); // redraw
+
+                // ===== TIMER DISPLAY: reset label =====
+                UpdateTimeLabel("Running...");
+                // ======================================
+
+                solverThread = new Thread(() =>
+                {
+                    long timeMs;
+                    OptimizedAlgorithm.Solve(
+                        (0, 0),
+                        (w - 1, h - 1),
+                        maze,
+                        ref visited,
+                        ref solutionPath,
+                        () =>
+                        {
+                            if (InvokeRequired)
+                                BeginInvoke(new Action(Invalidate));
+                            else
+                                Invalidate();
+                        },
+                        () => solverCancelRequested,
+                        out timeMs);
+
+                    // ===== TIMER DISPLAY: update label =====
+                    UpdateTimeLabel(timeMs);
+                    // ========================================
+                })
+                { IsBackground = true };
+
+                solverCancelRequested = false;
+                solverThread.Start();
+                Invalidate();
             };
+
+            btn2.Click += (s, e) =>
+            {
+                solverCancelRequested = true;
+                if (solverThread != null && solverThread.IsAlive)
+                {
+                    try { solverThread.Join(50); }
+                    catch { }
+                }
+
+                maze = new Maze(w, h);
+
+                // ===== TIMER DISPLAY: reset label =====
+                UpdateTimeLabel("Running...");
+                // ======================================
+
+                solverThread = new Thread(() =>
+                {
+                    long timeMs;
+                    NaiveAlgorithm.Solve(
+                        (0, 0),
+                        (w - 1, h - 1),
+                        maze,
+                        ref visited,
+                        ref solutionPath,
+                        () =>
+                        {
+                            if (InvokeRequired)
+                                BeginInvoke(new Action(Invalidate));
+                            else
+                                Invalidate();
+                        },
+                        () => solverCancelRequested,
+                        out timeMs);
+
+                    // ===== TIMER DISPLAY: update label =====
+                    UpdateTimeLabel(timeMs);
+                    // ========================================
+
+                    Invalidate();
+                })
+                { IsBackground = true };
+
+                solverCancelRequested = false;
+                solverThread.Start();
+                Invalidate();
+            };
+
+            Button animButton = new Button
+            {
+                Text = "Toggle Animation",
+                AutoSize = true,
+                Location = new Point(400, 10)
+            };
+            animButton.Click += (s, e) =>
+            {
+                GlobalSettings.UseAnimation = !GlobalSettings.UseAnimation;
+            };
+
             Controls.Add(btn);
+            Controls.Add(btn2);
+            Controls.Add(animButton);
         }
+
+        // ===== TIMER DISPLAY: helper methods to update label =====
+        private void UpdateTimeLabel(long milliseconds)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => timeLabel.Text = $"Time: {milliseconds} ms"));
+            }
+            else
+            {
+                timeLabel.Text = $"Time: {milliseconds} ms";
+            }
+        }
+
+        private void UpdateTimeLabel(string text)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => timeLabel.Text = $"Time: {text}"));
+            }
+            else
+            {
+                timeLabel.Text = $"Time: {text}";
+            }
+        }
+        // ==========================================================
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -57,10 +238,10 @@ namespace maze_algorithm
 
             using (var wallPen = new Pen(Color.Black, WallThickness))
             using (var gridPen = new Pen(Color.LightGray, 1))
-            using (var startBrush = new SolidBrush(Color.LightGreen))
-            using (var endBrush = new SolidBrush(Color.LightCoral))
-            using (var solutionPen = new Pen(Color.LightBlue, 10))
-            using (var solutionBrush = new SolidBrush(Color.FromArgb(80, Color.GreenYellow)))
+            using (var startBrush = new SolidBrush(Color.LightCoral))
+            using (var endBrush = new SolidBrush(Color.LightGreen))
+            using (var solutionPen = new Pen(Color.Black, 6))
+            using (var solutionBrush = new SolidBrush(Color.FromArgb(100, 150, 150, 150)))
             {
                 // background grid
                 for (int x = 0; x < maze.Width; x++)
@@ -122,9 +303,9 @@ namespace maze_algorithm
                 }
 
                 // PATH VISUALIZATION
-                if (solutionPath != null && solutionPath.Count > 0)
+                if (solutionPath != null && solutionPath.Count > 0 && visited != null)
                 {
-                    // fill each cell on the path
+                    // fill visited cells
                     for (int i = 0; i < visited.GetLength(0); i++)
                     {
                         for (int j = 0; j < visited.GetLength(1); j++)
@@ -145,7 +326,7 @@ namespace maze_algorithm
                         }
                     }
 
-                    // draw blue line through centers
+                    // draw line through path centers
                     for (int i = 0; i < solutionPath.Count - 1; i++)
                     {
                         var a = solutionPath[i];

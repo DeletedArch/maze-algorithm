@@ -34,10 +34,10 @@ public class Maze
             {
                 Cell c = cells[x, y];
 
-                c.upCell    = (y > 0)          ? cells[x, y - 1] : null;
-                c.downCell  = (y < height - 1) ? cells[x, y + 1] : null;
-                c.leftCell  = (x > 0)          ? cells[x - 1, y] : null;
-                c.rightCell = (x < width - 1)  ? cells[x + 1, y] : null;
+                c.upCell = (y > 0) ? cells[x, y - 1] : null;
+                c.downCell = (y < height - 1) ? cells[x, y + 1] : null;
+                c.leftCell = (x > 0) ? cells[x - 1, y] : null;
+                c.rightCell = (x < width - 1) ? cells[x + 1, y] : null;
             }
         }
 
@@ -73,6 +73,9 @@ public class Maze
             stack.Push((nx, ny));
         }
 
+        // Optionally add loops to the maze
+        AddLoops(width * height / 20);
+
         // Entrance at (0,0) open upward
         cells[0, 0].up = true;
 
@@ -100,13 +103,37 @@ public class Maze
     {
         var list = new List<(int x, int y)>();
 
-        if (y > 0 && !visited[x,y-1] && maze.cells[x, y].up == true && maze.cells[x, y - 1].down == true)
+        if (y > 0 && !visited[x, y - 1] && maze.cells[x, y].up == true && maze.cells[x, y - 1].down == true)
             list.Add((x, y - 1));
-        if (y < maze.height - 1 && !visited[x,y+1] && maze.cells[x, y].down == true && maze.cells[x, y + 1].up == true)
+        if (y < maze.height - 1 && !visited[x, y + 1] && maze.cells[x, y].down == true && maze.cells[x, y + 1].up == true)
             list.Add((x, y + 1));
-        if (x > 0 && !visited[x-1,y] && maze.cells[x, y].left == true && maze.cells[x - 1, y].right == true)
+        if (x > 0 && !visited[x - 1, y] && maze.cells[x, y].left == true && maze.cells[x - 1, y].right == true)
             list.Add((x - 1, y));
-        if (x < maze.width - 1 && !visited[x+1,y] && maze.cells[x, y].right == true && maze.cells[x + 1, y].left == true)
+        if (x < maze.width - 1 && !visited[x + 1, y] && maze.cells[x, y].right == true && maze.cells[x + 1, y].left == true)
+            list.Add((x + 1, y));
+
+        return list;
+    }
+
+    public static List<(int x, int y)> GetPossibleMoves(int x, int y, Maze maze)
+    {
+        var list = new List<(int x, int y)>();
+        var c = maze.cells[x, y];
+
+        // up
+        if (c.up && y > 0 && maze.cells[x, y - 1].down)
+            list.Add((x, y - 1));
+
+        // down
+        if (c.down && y < maze.Height - 1 && maze.cells[x, y + 1].up)
+            list.Add((x, y + 1));
+
+        // left
+        if (c.left && x > 0 && maze.cells[x - 1, y].right)
+            list.Add((x - 1, y));
+
+        // right
+        if (c.right && x < maze.Width - 1 && maze.cells[x + 1, y].left)
             list.Add((x + 1, y));
 
         return list;
@@ -143,4 +170,55 @@ public class Maze
             throw new InvalidOperationException("Cells are not adjacent.");
         }
     }
+
+    private void AddLoops(int count)
+{
+    Random rng = new Random();
+    int added = 0;
+
+    while (added < count)
+    {
+        int x = rng.Next(width);
+        int y = rng.Next(height);
+
+        // pick a random direction to open
+        int dir = rng.Next(4);
+
+        switch (dir)
+        {
+            case 0: // up
+                if (y > 0 && !cells[x, y].up)
+                {
+                    cells[x, y].up = true;
+                    cells[x, y - 1].down = true;
+                    added++;
+                }
+                break;
+            case 1: // down
+                if (y < height - 1 && !cells[x, y].down)
+                {
+                    cells[x, y].down = true;
+                    cells[x, y + 1].up = true;
+                    added++;
+                }
+                break;
+            case 2: // left
+                if (x > 0 && !cells[x, y].left)
+                {
+                    cells[x, y].left = true;
+                    cells[x - 1, y].right = true;
+                    added++;
+                }
+                break;
+            case 3: // right
+                if (x < width - 1 && !cells[x, y].right)
+                {
+                    cells[x, y].right = true;
+                    cells[x + 1, y].left = true;
+                    added++;
+                }
+                break;
+        }
+    }
+}
 }
