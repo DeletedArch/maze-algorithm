@@ -42,6 +42,14 @@ namespace maze_algorithm
             {
                 path = bestPath;
             }
+           
+            for (int i = 0; i < visited.GetLength(0); i++)
+            {
+                for (int j = 0; j < visited.GetLength(1); j++)
+                {
+                    visited[i, j] = true;
+                }
+            }
 
             timer.Stop();
             elapsedMilliseconds = timer.ElapsedMilliseconds;
