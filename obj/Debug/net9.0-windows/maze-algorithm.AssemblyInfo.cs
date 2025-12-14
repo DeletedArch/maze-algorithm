@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("maze-algorithm")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b28a2f194d7b3b5ad46c4be4143c4f5270cc010")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3a3b66386b04bf8233d187bf1b320c3308adbbed")]
 [assembly: System.Reflection.AssemblyProductAttribute("maze-algorithm")]
 [assembly: System.Reflection.AssemblyTitleAttribute("maze-algorithm")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

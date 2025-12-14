@@ -3,11 +3,11 @@ public static class NaiveAlgorithm
     public static List<(int x, int y)> Solve(
         (int x, int y) start,
         (int x, int y) end,
-        Maze maze)
+        Maze maze, out bool[,] visited)
     {
         Stack<(int x, int y)> stack = new Stack<(int x, int y)>();
         List<(int x, int y)> pathStack = new List<(int x, int y)>();
-        bool[,] visited = new bool[maze.Width, maze.Height];
+        visited = new bool[maze.Width, maze.Height];
 
         stack.Push(start);
         visited[start.x, start.y] = true;

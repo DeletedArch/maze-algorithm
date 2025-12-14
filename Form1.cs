@@ -12,6 +12,7 @@ namespace maze_algorithm
 
         // store the path as a list of (x, y)
         private List<(int x, int y)> solutionPath;
+        private bool[,] visited;
 
         public MainForm()
         {
@@ -23,7 +24,7 @@ namespace maze_algorithm
             maze = new Maze(w, h);
 
             // compute solution path from (0,0) to (w-1,h-1)
-            solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze);
+            solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze, out visited);
 
             int padding = 40;
             ClientSize = new Size(
@@ -41,7 +42,7 @@ namespace maze_algorithm
             btn.Click += (s, e) =>
             {
                 maze = new Maze(w, h);
-                solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze);
+                solutionPath = NaiveAlgorithm.Solve((0, 0), (w - 1, h - 1), maze, out visited);
                 Invalidate(); // redraw
             };
             Controls.Add(btn);
@@ -58,8 +59,8 @@ namespace maze_algorithm
             using (var gridPen = new Pen(Color.LightGray, 1))
             using (var startBrush = new SolidBrush(Color.LightGreen))
             using (var endBrush = new SolidBrush(Color.LightCoral))
-            using (var solutionPen = new Pen(Color.Blue, 3))
-            using (var solutionBrush = new SolidBrush(Color.FromArgb(80, Color.Blue)))
+            using (var solutionPen = new Pen(Color.LightBlue, 10))
+            using (var solutionBrush = new SolidBrush(Color.FromArgb(80, Color.GreenYellow)))
             {
                 // background grid
                 for (int x = 0; x < maze.Width; x++)
@@ -124,18 +125,24 @@ namespace maze_algorithm
                 if (solutionPath != null && solutionPath.Count > 0)
                 {
                     // fill each cell on the path
-                    foreach (var pos in solutionPath)
+                    for (int i = 0; i < visited.GetLength(0); i++)
                     {
-                        int px = offsetX + pos.x * CellSize;
-                        int py = offsetY + pos.y * CellSize;
+                        for (int j = 0; j < visited.GetLength(1); j++)
+                        {
+                            if (visited[i, j] == true)
+                            {
+                                int px = offsetX + i * CellSize;
+                                int py = offsetY + j * CellSize;
 
-                        e.Graphics.FillRectangle(
-                            solutionBrush,
-                            px + 2,
-                            py + 2,
-                            CellSize - 4,
-                            CellSize - 4
-                        );
+                                e.Graphics.FillRectangle(
+                                    solutionBrush,
+                                    px + 2,
+                                    py + 2,
+                                    CellSize,
+                                    CellSize
+                                );
+                            }
+                        }
                     }
 
                     // draw blue line through centers
